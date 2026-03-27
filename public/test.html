@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>API 测试</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    button { background: #1890ff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #40a9ff; }
+    pre { background: #f0f0f0; padding: 10px; border-radius: 4px; overflow: auto; }
+    .success { color: #52c41a; }
+    .error { color: #ff4d4f; }
+  </style>
+</head>
+<body>
+  <h1>🎨 拼豆 DIY - API 测试</h1>
+  
+  <div class="card">
+    <h3>后端服务状态</h3>
+    <button onclick="testHealth()">测试健康检查</button>
+    <pre id="health-result">等待测试...</pre>
+  </div>
+  
+  <div class="card">
+    <h3>登录测试</h3>
+    <input type="text" id="username" value="admin" placeholder="用户名" style="padding:8px; margin-right:8px;">
+    <input type="password" id="password" value="admin123" placeholder="密码" style="padding:8px; margin-right:8px;">
+    <button onclick="testLogin()">登录</button>
+    <pre id="login-result">等待测试...</pre>
+  </div>
+  
+  <div class="card">
+    <h3>管理接口测试</h3>
+    <button onclick="testDashboard()">获取仪表盘数据</button>
+    <pre id="dashboard-result">等待测试...</pre>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000/api';
+    let token = '';
+    
+    async function testHealth() {
+      try {
+        const res = await fetch('http://localhost:3000/health');
+        const data = await res.json();
+        document.getElementById('health-result').innerHTML = 
+          `<span class="success">✅ 成功</span>\n${JSON.stringify(data, null, 2)}`;
+      } catch (error) {
+        document.getElementById('health-result').innerHTML = 
+          `<span class="error">❌ 失败</span>\n${error.message}`;
+      }
+    }
+    
+    async function testLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          token = data.data.token;
+          document.getElementById('login-result').innerHTML = 
+            `<span class="success">✅ 登录成功</span>\nToken: ${token.substring(0, 50)}...\n${JSON.stringify(data.data.user, null, 2)}`;
+        } else {
+          document.getElementById('login-result').innerHTML = 
+            `<span class="error">❌ 失败</span>\n${data.message}`;
+        }
+      } catch (error) {
+        document.getElementById('login-result').innerHTML = 
+          `<span class="error">❌ 失败</span>\n${error.message}`;
+      }
+    }
+    
+    async function testDashboard() {
+      if (!token) {
+        document.getElementById('dashboard-result').innerHTML = 
+          '<span class="error">❌ 请先登录</span>';
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_BASE}/admin/dashboard/stats`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('dashboard-result').innerHTML = 
+            `<span class="success">✅ 成功</span>\n${JSON.stringify(data.data, null, 2)}`;
+        } else {
+          document.getElementById('dashboard-result').innerHTML = 
+            `<span class="error">❌ 失败</span>\n${data.message}`;
+        }
+      } catch (error) {
+        document.getElementById('dashboard-result').innerHTML = 
+          `<span class="error">❌ 失败</span>\n${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
